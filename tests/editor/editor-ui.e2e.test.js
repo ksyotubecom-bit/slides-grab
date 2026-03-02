@@ -92,8 +92,6 @@ test('supports multi-bbox selection and delete in chat composer flow', async () 
     await page.waitForSelector('#draw-layer');
     await page.waitForTimeout(800);
 
-    await page.click('#btn-draw-bbox');
-
     const drawLayer = await page.locator('#draw-layer').boundingBox();
     assert.ok(drawLayer, 'draw layer not found');
 
@@ -111,7 +109,7 @@ test('supports multi-bbox selection and delete in chat composer flow', async () 
 
     await page.waitForFunction(() => {
       const el = document.querySelector('#bbox-count');
-      return el && /2 boxes/.test(el.textContent || '');
+      return el && /2 pending/.test(el.textContent || '');
     });
 
     await page.locator('.bbox-item').first().click();
@@ -119,13 +117,19 @@ test('supports multi-bbox selection and delete in chat composer flow', async () 
 
     await page.waitForFunction(() => {
       const el = document.querySelector('#bbox-count');
-      return el && /1 box/.test(el.textContent || '');
+      return el && /1 pending/.test(el.textContent || '');
     });
 
-    let capturedBody = null;
+    const clearInWrapper = await page.evaluate(() => {
+      const btn = document.querySelector('#btn-clear-bboxes');
+      return !!btn && !!btn.closest('#slide-wrapper') && !btn.closest('.composer');
+    });
+    assert.equal(clearInWrapper, true, 'clear button should be in slide wrapper');
+
+    const capturedBodies = [];
     await page.route('**/api/apply', async (route) => {
       const req = route.request();
-      capturedBody = JSON.parse(req.postData() || '{}');
+      capturedBodies.push(JSON.parse(req.postData() || '{}'));
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -146,11 +150,32 @@ test('supports multi-bbox selection and delete in chat composer flow', async () 
       return el && /ok/i.test(el.textContent || '');
     });
 
-    assert.ok(capturedBody, 'apply payload was not captured');
-    assert.equal(capturedBody.slide, 'slide-01.html');
-    assert.ok(Array.isArray(capturedBody.selections));
-    assert.equal(capturedBody.selections.length, 1);
-    assert.ok(Array.isArray(capturedBody.selections[0].targets));
+    await page.waitForFunction(() => document.querySelectorAll('.bbox-item.review').length === 1);
+    assert.equal(await page.locator('.bbox-item.pending').count(), 0);
+
+    assert.equal(capturedBodies.length, 1, 'first apply payload was not captured');
+    assert.equal(capturedBodies[0].slide, 'slide-01.html');
+    assert.ok(Array.isArray(capturedBodies[0].selections));
+    assert.equal(capturedBodies[0].selections.length, 1);
+    assert.ok(Array.isArray(capturedBodies[0].selections[0].targets));
+
+    await page.locator('.bbox-item.review').first().click();
+    await page.locator('.bbox-item.selected [data-box-rerun]').click();
+    await page.waitForFunction(() => document.querySelectorAll('.bbox-item.pending').length === 1);
+
+    await page.fill('#prompt-input', 'Run once more.');
+    await page.click('#btn-send');
+    await page.waitForFunction(() => document.querySelectorAll('.bbox-item.review').length === 1);
+    assert.equal(capturedBodies.length, 2);
+    assert.equal(capturedBodies[1].selections.length, 1);
+
+    await page.locator('.bbox-item.review').first().click();
+    await page.locator('.bbox-item.selected [data-box-check]').click();
+    await page.waitForFunction(() => document.querySelectorAll('.bbox-item').length === 0);
+    await page.waitForFunction(() => {
+      const el = document.querySelector('#bbox-count');
+      return el && /0 pending/.test(el.textContent || '');
+    });
   } finally {
     if (browser) {
       await browser.close().catch(() => {});
