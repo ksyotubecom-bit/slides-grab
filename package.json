@@ -1,7 +1,7 @@
 {
   "name": "ppt-team-agent",
   "version": "1.0.0",
-  "description": "PPT Team Agent - Claude Code Sub-Agent and Skill based presentation generator",
+  "description": "PPT Team Agent - agent-first presentation generator",
   "type": "module",
   "bin": {
     "ppt-agent": "./bin/ppt-agent.js"
@@ -10,14 +10,9 @@
     "html2pptx": "node .claude/skills/pptx-skill/scripts/html2pptx.js",
     "build-viewer": "node scripts/build-viewer.js",
     "validate": "node scripts/validate-slides.js",
-    "convert": "node convert.cjs",
-    "extract-style": "node scripts/extract-style.js"
+    "convert": "node convert.cjs"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.48",
-    "@ai-sdk/google": "^3.0.33",
-    "@ai-sdk/openai": "^3.0.36",
-    "ai": "^6.0.103",
     "commander": "^12.1.0",
     "express": "^5.2.1",
     "pdf-lib": "^1.17.1",

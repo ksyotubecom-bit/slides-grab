@@ -6,7 +6,6 @@
   <title>Slide Editor - ppt-agent</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
   <style>
-    /* === Reset & Base === */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
@@ -25,7 +24,6 @@
       flex-direction: column;
     }
 
-    /* === Navigation Bar === */
     .nav-bar {
       height: 48px;
       background: #1a1a1a;
@@ -55,18 +53,9 @@
       transition: background 0.15s;
     }
 
-    .nav-bar button:hover {
-      background: #555;
-    }
-
-    .nav-bar button:disabled {
-      opacity: 0.3;
-      cursor: default;
-    }
-
-    .nav-bar button:disabled:hover {
-      background: #333;
-    }
+    .nav-bar button:hover { background: #555; }
+    .nav-bar button:disabled { opacity: 0.3; cursor: default; }
+    .nav-bar button:disabled:hover { background: #333; }
 
     .slide-counter {
       color: #aaa;
@@ -76,10 +65,7 @@
       text-align: center;
     }
 
-    .nav-spacer {
-      flex: 1;
-    }
-
+    .nav-spacer { flex: 1; }
     .brand {
       color: #555;
       font-size: 13px;
@@ -87,7 +73,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* === Main Content === */
     .main-content {
       flex: 1;
       display: flex;
@@ -95,7 +80,6 @@
       min-height: 0;
     }
 
-    /* === Slide Viewport === */
     .slide-panel {
       flex: 1;
       display: flex;
@@ -109,7 +93,6 @@
 
     .slide-wrapper {
       position: relative;
-      /* 720pt × 405pt = 960px × 540px at CSS 96dpi (1pt = 4/3 px) */
       width: 960px;
       height: 540px;
       transform-origin: center center;
@@ -122,12 +105,35 @@
       border-radius: 4px;
       background: #fff;
       display: block;
+      position: relative;
+      z-index: 1;
     }
 
-    /* === Feedback Panel === */
+    .selection-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      border-radius: 4px;
+    }
+
+    .selection-layer.active {
+      pointer-events: auto;
+      cursor: crosshair;
+    }
+
+    .selection-box {
+      position: absolute;
+      border: 2px solid #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      z-index: 11;
+    }
+
     .feedback-panel {
-      width: 380px;
-      min-width: 320px;
+      width: 420px;
+      min-width: 340px;
       background: #1a1a1a;
       border-left: 1px solid #333;
       display: flex;
@@ -137,7 +143,10 @@
     }
 
     .panel-section {
-      padding: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .panel-section + .panel-section {
@@ -150,7 +159,6 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-bottom: 8px;
     }
 
     .feedback-textarea {
@@ -169,12 +177,12 @@
       transition: border-color 0.15s;
     }
 
-    .feedback-textarea:focus {
-      border-color: #666;
-    }
+    .feedback-textarea:focus { border-color: #666; }
+    .feedback-textarea::placeholder { color: #555; }
 
-    .feedback-textarea::placeholder {
-      color: #555;
+    .button-row {
+      display: flex;
+      gap: 8px;
     }
 
     .btn {
@@ -182,173 +190,107 @@
       color: #fff;
       border: none;
       border-radius: 6px;
-      padding: 8px 16px;
+      padding: 8px 12px;
       font-size: 13px;
       font-family: inherit;
       cursor: pointer;
       transition: background 0.15s;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      width: 100%;
       justify-content: center;
-      margin-top: 8px;
+      gap: 8px;
+      min-height: 34px;
+      white-space: nowrap;
     }
 
-    .btn:hover {
-      background: #555;
-    }
+    .btn:hover { background: #555; }
+    .btn:disabled { opacity: 0.3; cursor: default; }
+    .btn:disabled:hover { background: #333; }
 
-    .btn:disabled {
-      opacity: 0.3;
-      cursor: default;
-    }
-
-    .btn:disabled:hover {
-      background: #333;
-    }
-
-    .btn-primary {
-      background: #2563eb;
-    }
-
-    .btn-primary:hover {
-      background: #3b82f6;
-    }
-
-    .btn-primary:disabled {
-      background: #2563eb;
-    }
-
-    .btn-primary:disabled:hover {
-      background: #2563eb;
-    }
-
-    .btn-apply {
-      background: #16a34a;
-    }
-
-    .btn-apply:hover {
-      background: #22c55e;
-    }
-
-    .btn-apply:disabled {
-      background: #16a34a;
-    }
-
-    .btn-apply:disabled:hover {
-      background: #16a34a;
-    }
-
-    /* === Spinner === */
-    .spinner {
-      display: none;
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
-
-    .spinner.visible {
-      display: inline-block;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* === Change Spec Display === */
-    .changespec-section {
+    .btn-region {
+      background: #0f766e;
       flex: 1;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
     }
 
-    .changespec-content {
-      flex: 1;
-      overflow-y: auto;
+    .btn-region:hover { background: #0d9488; }
+
+    .btn-clear {
+      background: #444;
+      min-width: 88px;
+    }
+
+    .btn-codex {
+      background: #2563eb;
+      width: 100%;
+    }
+
+    .btn-codex:hover { background: #3b82f6; }
+
+    .selection-meta {
       background: #222;
       border: 1px solid #444;
       border-radius: 6px;
-      padding: 12px;
-      font-size: 13px;
-      line-height: 1.6;
-      color: #ddd;
-    }
-
-    .changespec-content:empty::before {
-      content: 'Change spec will appear here after VLM review.';
-      color: #555;
-      font-style: italic;
-    }
-
-    .changespec-content h3 {
-      font-size: 14px;
-      font-weight: 700;
-      color: #fff;
-      margin: 12px 0 6px;
-    }
-
-    .changespec-content h3:first-child {
-      margin-top: 0;
-    }
-
-    .changespec-content h4 {
-      font-size: 13px;
-      font-weight: 600;
-      color: #eee;
-      margin: 10px 0 4px;
-    }
-
-    .changespec-content h4:first-child {
-      margin-top: 0;
-    }
-
-    .changespec-content ul {
-      margin: 4px 0 8px 18px;
-      padding: 0;
-    }
-
-    .changespec-content li {
-      margin: 2px 0;
+      padding: 10px;
+      font-size: 12px;
       color: #ccc;
+      line-height: 1.5;
+      min-height: 58px;
     }
 
-    .changespec-content code {
-      background: #333;
-      padding: 1px 5px;
-      border-radius: 3px;
+    .xpath-list {
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 8px 10px;
+      max-height: 140px;
+      overflow-y: auto;
       font-size: 12px;
+      line-height: 1.5;
+      color: #bbb;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .xpath-item {
+      border-left: 2px solid #444;
+      padding-left: 8px;
+    }
+
+    .xpath-item .path {
+      color: #e5e7eb;
+      word-break: break-all;
       font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-      color: #f0abfc;
     }
 
-    .changespec-content pre {
-      background: #1a1a1a;
+    .xpath-item .text {
+      color: #9ca3af;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .log-section {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .log-view {
+      flex: 1;
+      min-height: 0;
+      background: #111;
       border: 1px solid #333;
-      border-radius: 4px;
-      padding: 10px 12px;
-      margin: 8px 0;
-      overflow-x: auto;
-    }
-
-    .changespec-content pre code {
-      background: none;
-      padding: 0;
-      border-radius: 0;
+      border-radius: 6px;
+      color: #d1d5db;
       font-size: 12px;
-      color: #ddd;
+      line-height: 1.45;
+      padding: 10px;
+      overflow: auto;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      white-space: pre-wrap;
     }
 
-    .changespec-content strong {
-      color: #fff;
-      font-weight: 600;
-    }
-
-    /* === Status Bar === */
     .status-bar {
       height: 28px;
       background: #1a1a1a;
@@ -371,13 +313,8 @@
       margin-right: 6px;
     }
 
-    .status-dot.connected {
-      background: #22c55e;
-    }
-
-    .status-dot.disconnected {
-      background: #ef4444;
-    }
+    .status-dot.connected { background: #22c55e; }
+    .status-dot.disconnected { background: #ef4444; }
 
     .status-message {
       flex: 1;
@@ -388,33 +325,25 @@
       white-space: nowrap;
     }
 
-    /* === Scrollbar === */
-    .changespec-content::-webkit-scrollbar {
-      width: 6px;
+    .spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
     }
 
-    .changespec-content::-webkit-scrollbar-track {
-      background: transparent;
-    }
+    .spinner.visible { display: inline-block; }
 
-    .changespec-content::-webkit-scrollbar-thumb {
-      background: #444;
-      border-radius: 3px;
-    }
-
-    .changespec-content::-webkit-scrollbar-thumb:hover {
-      background: #555;
-    }
-
-    /* === Hidden utility === */
-    .hidden {
-      display: none !important;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
   <div class="editor-container">
-    <!-- Navigation Bar -->
     <div class="nav-bar">
       <div class="nav-controls">
         <button id="btn-prev" title="Previous slide (Left arrow)">&#9664; Prev</button>
@@ -425,44 +354,47 @@
       <span class="brand">ppt-agent</span>
     </div>
 
-    <!-- Main Content: Slide + Feedback -->
     <div class="main-content">
-      <!-- Slide Viewport -->
       <div class="slide-panel" id="slide-panel">
         <div class="slide-wrapper" id="slide-wrapper">
           <iframe id="slide-iframe" sandbox="allow-same-origin allow-scripts" loading="eager"></iframe>
+          <div class="selection-layer" id="selection-layer"></div>
+          <div class="selection-box" id="selection-box" style="display:none"></div>
         </div>
       </div>
 
-      <!-- Feedback Panel -->
       <div class="feedback-panel">
-        <!-- Feedback Input -->
         <div class="panel-section">
-          <div class="panel-label">Feedback</div>
+          <div class="panel-label">Edit Request</div>
           <textarea
             class="feedback-textarea"
             id="feedback-textarea"
-            placeholder="Describe what changes you want for this slide..."
+            placeholder="Describe the change you want in the selected region..."
           ></textarea>
-          <button class="btn btn-primary" id="btn-submit" disabled>
-            <span class="spinner" id="spinner-submit"></span>
-            <span id="btn-submit-text">Submit to VLM</span>
+          <div class="button-row">
+            <button class="btn btn-region" id="btn-select-region">Select Region</button>
+            <button class="btn btn-clear" id="btn-clear-region" disabled>Clear</button>
+          </div>
+          <button class="btn btn-codex" id="btn-apply" disabled>
+            <span class="spinner" id="spinner-apply"></span>
+            <span id="btn-apply-text">Send To Codex</span>
           </button>
         </div>
 
-        <!-- Change Spec -->
-        <div class="panel-section changespec-section">
-          <div class="panel-label">Change Spec</div>
-          <div class="changespec-content" id="changespec-content"></div>
-          <button class="btn btn-apply hidden" id="btn-apply">
-            <span class="spinner" id="spinner-apply"></span>
-            <span id="btn-apply-text">Apply Changes</span>
-          </button>
+        <div class="panel-section">
+          <div class="panel-label">Selected Region</div>
+          <div class="selection-meta" id="selection-meta">No region selected.</div>
+          <div class="panel-label">Detected XPath Targets</div>
+          <div class="xpath-list" id="xpath-list">No targets yet.</div>
+        </div>
+
+        <div class="panel-section log-section">
+          <div class="panel-label">Codex Work Log (stdout/stderr)</div>
+          <div class="log-view" id="log-view"></div>
         </div>
       </div>
     </div>
 
-    <!-- Status Bar -->
     <div class="status-bar">
       <span>
         <span class="status-dot" id="status-dot"></span>
@@ -473,40 +405,116 @@
   </div>
 
   <script>
-    // =========================================================================
-    // State
-    // =========================================================================
     let slides = [];
     let currentIndex = 0;
-    let currentChangeSpec = null;
-    let isSubmitting = false;
     let isApplying = false;
+    let isSelecting = false;
+    let dragStart = null;
+    let selection = null;
+    let targets = [];
+    let currentRunId = null;
 
-    // =========================================================================
-    // DOM References
-    // =========================================================================
+    const SLIDE_W = 960;
+    const SLIDE_H = 540;
+
     const $ = (sel) => document.querySelector(sel);
-    const btnPrev       = $('#btn-prev');
-    const btnNext       = $('#btn-next');
-    const slideCounter  = $('#slide-counter');
-    const slideIframe   = $('#slide-iframe');
-    const slidePanel    = $('#slide-panel');
-    const slideWrapper  = $('#slide-wrapper');
-    const textarea      = $('#feedback-textarea');
-    const btnSubmit     = $('#btn-submit');
-    const btnSubmitText = $('#btn-submit-text');
-    const spinnerSubmit = $('#spinner-submit');
-    const changespecEl  = $('#changespec-content');
-    const btnApply      = $('#btn-apply');
-    const btnApplyText  = $('#btn-apply-text');
-    const spinnerApply  = $('#spinner-apply');
-    const statusDot     = $('#status-dot');
-    const statusConn    = $('#status-connection');
-    const statusMsg     = $('#status-message');
+    const btnPrev = $('#btn-prev');
+    const btnNext = $('#btn-next');
+    const slideCounter = $('#slide-counter');
+    const slideIframe = $('#slide-iframe');
+    const slidePanel = $('#slide-panel');
+    const slideWrapper = $('#slide-wrapper');
+    const selectionLayer = $('#selection-layer');
+    const selectionBox = $('#selection-box');
 
-    // =========================================================================
-    // Navigation
-    // =========================================================================
+    const textarea = $('#feedback-textarea');
+    const btnSelectRegion = $('#btn-select-region');
+    const btnClearRegion = $('#btn-clear-region');
+    const btnApply = $('#btn-apply');
+    const btnApplyText = $('#btn-apply-text');
+    const spinnerApply = $('#spinner-apply');
+
+    const selectionMeta = $('#selection-meta');
+    const xpathList = $('#xpath-list');
+    const logView = $('#log-view');
+
+    const statusDot = $('#status-dot');
+    const statusConn = $('#status-connection');
+    const statusMsg = $('#status-message');
+
+    function setStatus(message) {
+      statusMsg.textContent = message;
+    }
+
+    function appendLog(text) {
+      if (!text) return;
+      logView.textContent += text;
+      logView.scrollTop = logView.scrollHeight;
+    }
+
+    function clearLog() {
+      logView.textContent = '';
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function resetSelection() {
+      selection = null;
+      targets = [];
+      dragStart = null;
+      selectionBox.style.display = 'none';
+      btnClearRegion.disabled = true;
+      renderSelectionMeta();
+      renderTargets();
+      updateApplyState();
+    }
+
+    function renderSelectionMeta() {
+      if (!selection) {
+        selectionMeta.textContent = 'No region selected.';
+        return;
+      }
+
+      selectionMeta.textContent = `x=${selection.x}, y=${selection.y}, width=${selection.width}, height=${selection.height}`;
+    }
+
+    function renderTargets() {
+      if (!targets.length) {
+        xpathList.textContent = selection ? 'No intersecting elements found.' : 'No targets yet.';
+        return;
+      }
+
+      xpathList.innerHTML = targets.map((target, idx) => {
+        const safePath = escapeHtml(target.xpath || '');
+        const safeText = escapeHtml(target.text || '(no text)');
+        const safeTag = escapeHtml(target.tag || 'unknown');
+        return [
+          '<div class="xpath-item">',
+          `<div><strong>${idx + 1}. ${safeTag}</strong></div>`,
+          `<div class="path">${safePath}</div>`,
+          `<div class="text">${safeText}</div>`,
+          '</div>'
+        ].join('');
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function updateApplyState() {
+      const prompt = textarea.value.trim();
+      btnApply.disabled = isApplying || !prompt || !selection;
+      btnSelectRegion.disabled = isApplying;
+      btnClearRegion.disabled = isApplying || !selection;
+    }
+
     function goToSlide(index) {
       if (index < 0 || index >= slides.length) return;
       currentIndex = index;
@@ -514,100 +522,201 @@
       slideCounter.textContent = `${currentIndex + 1} / ${slides.length}`;
       btnPrev.disabled = currentIndex === 0;
       btnNext.disabled = currentIndex === slides.length - 1;
-
-      // Clear change spec when navigating
-      currentChangeSpec = null;
-      changespecEl.innerHTML = '';
-      btnApply.classList.add('hidden');
+      resetSelection();
+      setStatus(`Loaded ${slides[currentIndex]}`);
     }
 
-    btnPrev.addEventListener('click', () => goToSlide(currentIndex - 1));
-    btnNext.addEventListener('click', () => goToSlide(currentIndex + 1));
-
-    // =========================================================================
-    // Viewport scaling
-    // =========================================================================
-    // 720pt × 405pt = 960px × 540px at CSS 96dpi
-    const SLIDE_W = 960;
-    const SLIDE_H = 540;
-
     function scaleSlide() {
-      const panel = slidePanel;
-      const padX = 48; // 24px each side
+      const padX = 48;
       const padY = 48;
-      const availW = panel.clientWidth - padX;
-      const availH = panel.clientHeight - padY;
+      const availW = slidePanel.clientWidth - padX;
+      const availH = slidePanel.clientHeight - padY;
       if (availW <= 0 || availH <= 0) return;
 
       const scale = Math.min(availW / SLIDE_W, availH / SLIDE_H) * 0.95;
       slideWrapper.style.transform = `scale(${scale})`;
     }
 
-    window.addEventListener('resize', scaleSlide);
+    function getXPath(el) {
+      if (!el || el.nodeType !== Node.ELEMENT_NODE) return '';
 
-    // =========================================================================
-    // Feedback submit
-    // =========================================================================
-    textarea.addEventListener('input', updateSubmitState);
+      const segments = [];
+      let node = el;
+      while (node && node.nodeType === Node.ELEMENT_NODE) {
+        const tag = node.tagName.toLowerCase();
 
-    function updateSubmitState() {
-      btnSubmit.disabled = textarea.value.trim() === '' || isSubmitting;
-    }
-
-    btnSubmit.addEventListener('click', submitFeedback);
-
-    async function submitFeedback() {
-      if (isSubmitting || textarea.value.trim() === '') return;
-      isSubmitting = true;
-      btnSubmit.disabled = true;
-      btnSubmitText.textContent = 'Analyzing...';
-      spinnerSubmit.classList.add('visible');
-      setStatus('Submitting feedback to VLM...');
-
-      try {
-        const res = await fetch('/api/vlm-feedback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            slide: slides[currentIndex],
-            feedback: textarea.value
-          })
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`Server error ${res.status}: ${errText}`);
+        let index = 1;
+        let sibling = node.previousElementSibling;
+        while (sibling) {
+          if (sibling.tagName === node.tagName) index += 1;
+          sibling = sibling.previousElementSibling;
         }
 
-        const data = await res.json();
-        currentChangeSpec = data.changeSpec;
-        changespecEl.innerHTML = renderMarkdown(currentChangeSpec);
-        btnApply.classList.remove('hidden');
-        btnApply.disabled = false;
-        setStatus('Change spec received. Review and apply when ready.');
-      } catch (err) {
-        setStatus(`Error: ${err.message}`);
-        console.error('VLM feedback error:', err);
-      } finally {
-        isSubmitting = false;
-        btnSubmitText.textContent = 'Submit to VLM';
-        spinnerSubmit.classList.remove('visible');
-        updateSubmitState();
+        segments.unshift(`${tag}[${index}]`);
+        node = node.parentElement;
       }
+
+      return `/${segments.join('/')}`;
     }
 
-    // =========================================================================
-    // Apply changes
-    // =========================================================================
-    btnApply.addEventListener('click', applyChanges);
+    function intersectArea(a, b) {
+      const left = Math.max(a.x, b.x);
+      const top = Math.max(a.y, b.y);
+      const right = Math.min(a.x + a.width, b.x + b.width);
+      const bottom = Math.min(a.y + a.height, b.y + b.height);
+      if (right <= left || bottom <= top) return 0;
+      return (right - left) * (bottom - top);
+    }
+
+    function extractTargetsForSelection(sel) {
+      const doc = slideIframe.contentDocument;
+      if (!doc || !doc.body) return [];
+
+      const all = Array.from(doc.body.querySelectorAll('*'));
+      const candidates = [];
+
+      for (const el of all) {
+        const tag = el.tagName ? el.tagName.toLowerCase() : '';
+        if (!tag || ['script', 'style', 'link', 'meta', 'noscript'].includes(tag)) continue;
+
+        const rect = el.getBoundingClientRect();
+        if (!rect || rect.width <= 1 || rect.height <= 1) continue;
+
+        const box = {
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height,
+        };
+
+        const area = intersectArea(sel, box);
+        if (area <= 0) continue;
+
+        const xpath = getXPath(el);
+        if (!xpath) continue;
+
+        const text = (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 140);
+
+        candidates.push({
+          xpath,
+          tag,
+          text,
+          area,
+        });
+      }
+
+      candidates.sort((a, b) => b.area - a.area);
+
+      const dedup = [];
+      const seen = new Set();
+      for (const item of candidates) {
+        if (seen.has(item.xpath)) continue;
+        seen.add(item.xpath);
+        dedup.push({ xpath: item.xpath, tag: item.tag, text: item.text });
+        if (dedup.length >= 12) break;
+      }
+
+      return dedup;
+    }
+
+    function updateSelectionBox(sel) {
+      if (!sel) {
+        selectionBox.style.display = 'none';
+        return;
+      }
+
+      selectionBox.style.display = 'block';
+      selectionBox.style.left = `${sel.x}px`;
+      selectionBox.style.top = `${sel.y}px`;
+      selectionBox.style.width = `${sel.width}px`;
+      selectionBox.style.height = `${sel.height}px`;
+    }
+
+    function clientToSlidePoint(clientX, clientY) {
+      const rect = selectionLayer.getBoundingClientRect();
+      const relX = clamp((clientX - rect.left) / rect.width, 0, 1);
+      const relY = clamp((clientY - rect.top) / rect.height, 0, 1);
+
+      return {
+        x: Math.round(relX * SLIDE_W),
+        y: Math.round(relY * SLIDE_H),
+      };
+    }
+
+    function enterSelectionMode() {
+      if (isApplying) return;
+      isSelecting = true;
+      dragStart = null;
+      selectionLayer.classList.add('active');
+      setStatus('Drag on the slide to select the edit region.');
+    }
+
+    function exitSelectionMode() {
+      isSelecting = false;
+      dragStart = null;
+      selectionLayer.classList.remove('active');
+    }
+
+    function onSelectStart(ev) {
+      if (!isSelecting) return;
+      ev.preventDefault();
+      dragStart = clientToSlidePoint(ev.clientX, ev.clientY);
+      updateSelectionBox({ x: dragStart.x, y: dragStart.y, width: 1, height: 1 });
+    }
+
+    function onSelectMove(ev) {
+      if (!isSelecting || !dragStart) return;
+
+      const point = clientToSlidePoint(ev.clientX, ev.clientY);
+      const x = Math.min(dragStart.x, point.x);
+      const y = Math.min(dragStart.y, point.y);
+      const width = Math.max(1, Math.abs(point.x - dragStart.x));
+      const height = Math.max(1, Math.abs(point.y - dragStart.y));
+
+      updateSelectionBox({ x, y, width, height });
+    }
+
+    function onSelectEnd(ev) {
+      if (!isSelecting || !dragStart) return;
+
+      const point = clientToSlidePoint(ev.clientX, ev.clientY);
+      const x = Math.min(dragStart.x, point.x);
+      const y = Math.min(dragStart.y, point.y);
+      const width = Math.max(1, Math.abs(point.x - dragStart.x));
+      const height = Math.max(1, Math.abs(point.y - dragStart.y));
+
+      exitSelectionMode();
+
+      if (width < 3 || height < 3) {
+        resetSelection();
+        setStatus('Selection is too small. Select a larger region.');
+        return;
+      }
+
+      selection = { x, y, width, height };
+      targets = extractTargetsForSelection(selection);
+
+      updateSelectionBox(selection);
+      renderSelectionMeta();
+      renderTargets();
+      updateApplyState();
+
+      setStatus(`Region selected (${targets.length} XPath target(s) detected).`);
+    }
 
     async function applyChanges() {
-      if (isApplying || !currentChangeSpec) return;
+      if (isApplying || !selection) return;
+      const prompt = textarea.value.trim();
+      if (!prompt) return;
+
       isApplying = true;
-      btnApply.disabled = true;
-      btnApplyText.textContent = 'Applying...';
+      btnApplyText.textContent = 'Running Codex...';
       spinnerApply.classList.add('visible');
-      setStatus('Applying changes via agent...');
+      updateApplyState();
+
+      clearLog();
+      appendLog(`[editor] submitting ${slides[currentIndex]}\n`);
+      setStatus('Submitting edit request to Codex...');
 
       try {
         const res = await fetch('/api/apply', {
@@ -615,35 +724,31 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             slide: slides[currentIndex],
-            changeSpec: currentChangeSpec
-          })
+            prompt,
+            selection,
+            targets,
+          }),
         });
 
+        const data = await res.json().catch(() => ({}));
+
         if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`Server error ${res.status}: ${errText}`);
+          throw new Error(data.error || `Server error ${res.status}`);
         }
 
-        const data = await res.json();
-        if (data.success) {
-          setStatus(data.message || 'Changes applied successfully.');
-        } else {
-          setStatus(`Apply failed: ${data.message || 'Unknown error'}`);
-        }
+        currentRunId = data.runId || currentRunId;
+        setStatus(data.message || 'Codex request completed.');
       } catch (err) {
         setStatus(`Error: ${err.message}`);
-        console.error('Apply error:', err);
+        appendLog(`\n[editor] request failed: ${err.message}\n`);
       } finally {
         isApplying = false;
-        btnApplyText.textContent = 'Apply Changes';
+        btnApplyText.textContent = 'Send To Codex';
         spinnerApply.classList.remove('visible');
-        btnApply.disabled = false;
+        updateApplyState();
       }
     }
 
-    // =========================================================================
-    // SSE auto-refresh
-    // =========================================================================
     function connectSSE() {
       const evtSource = new EventSource('/api/events');
 
@@ -657,11 +762,42 @@
         try {
           const { file } = JSON.parse(e.data);
           if (file === slides[currentIndex]) {
-            slideIframe.src = slideIframe.src; // force reload
-            setStatus(`Slide ${file} updated, iframe reloaded.`);
+            slideIframe.src = slideIframe.src;
+            setStatus(`Slide ${file} updated.`);
           }
         } catch (err) {
           console.error('SSE parse error:', err);
+        }
+      });
+
+      evtSource.addEventListener('applyStarted', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          currentRunId = data.runId;
+          appendLog(`[codex] run ${data.runId} started for ${data.slide}\n`);
+        } catch (err) {
+          console.error('SSE applyStarted parse error:', err);
+        }
+      });
+
+      evtSource.addEventListener('applyLog', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (currentRunId && data.runId !== currentRunId) return;
+          appendLog(data.chunk || '');
+        } catch (err) {
+          console.error('SSE applyLog parse error:', err);
+        }
+      });
+
+      evtSource.addEventListener('applyFinished', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (currentRunId && data.runId !== currentRunId) return;
+          appendLog(`\n[codex] finished (code=${data.code}) ${data.message || ''}\n`);
+          setStatus(data.message || 'Codex run finished.');
+        } catch (err) {
+          console.error('SSE applyFinished parse error:', err);
         }
       });
 
@@ -669,24 +805,39 @@
         statusDot.classList.remove('connected');
         statusDot.classList.add('disconnected');
         statusConn.textContent = 'Disconnected';
-        // EventSource will auto-reconnect
       };
     }
 
-    // =========================================================================
-    // Keyboard shortcuts
-    // =========================================================================
+    btnPrev.addEventListener('click', () => goToSlide(currentIndex - 1));
+    btnNext.addEventListener('click', () => goToSlide(currentIndex + 1));
+    btnSelectRegion.addEventListener('click', enterSelectionMode);
+    btnClearRegion.addEventListener('click', () => {
+      resetSelection();
+      setStatus('Selection cleared.');
+    });
+
+    selectionLayer.addEventListener('mousedown', onSelectStart);
+    window.addEventListener('mousemove', onSelectMove);
+    window.addEventListener('mouseup', onSelectEnd);
+
+    btnApply.addEventListener('click', applyChanges);
+    textarea.addEventListener('input', updateApplyState);
+
     document.addEventListener('keydown', (e) => {
       const inTextarea = document.activeElement === textarea;
 
-      // Ctrl+Enter (or Cmd+Enter) to submit feedback
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        submitFeedback();
+        applyChanges();
         return;
       }
 
-      // Arrow navigation only when textarea is not focused
+      if (e.key === 'Escape' && isSelecting) {
+        exitSelectionMode();
+        setStatus('Selection canceled.');
+        return;
+      }
+
       if (inTextarea) return;
 
       if (e.key === 'ArrowLeft') {
@@ -698,127 +849,20 @@
       }
     });
 
-    // =========================================================================
-    // Status bar
-    // =========================================================================
-    function setStatus(msg) {
-      statusMsg.textContent = msg;
-    }
+    window.addEventListener('resize', scaleSlide);
+    slideIframe.addEventListener('load', () => {
+      setStatus(`Loaded ${slides[currentIndex]}`);
+    });
 
-    // =========================================================================
-    // Lightweight Markdown Renderer
-    // =========================================================================
-    function renderMarkdown(md) {
-      if (!md) return '';
-
-      const lines = md.split('\n');
-      let html = '';
-      let inCodeBlock = false;
-      let codeBlockContent = '';
-      let inList = false;
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        // Code block toggle
-        if (line.trimStart().startsWith('```')) {
-          if (inCodeBlock) {
-            // Close code block
-            html += `<pre><code>${escapeHtml(codeBlockContent.trimEnd())}</code></pre>`;
-            codeBlockContent = '';
-            inCodeBlock = false;
-          } else {
-            // Close any open list first
-            if (inList) {
-              html += '</ul>';
-              inList = false;
-            }
-            inCodeBlock = true;
-          }
-          continue;
-        }
-
-        if (inCodeBlock) {
-          codeBlockContent += line + '\n';
-          continue;
-        }
-
-        // Headings
-        if (line.startsWith('## ')) {
-          if (inList) { html += '</ul>'; inList = false; }
-          html += `<h4>${inlineFormat(line.slice(3))}</h4>`;
-          continue;
-        }
-        if (line.startsWith('# ')) {
-          if (inList) { html += '</ul>'; inList = false; }
-          html += `<h3>${inlineFormat(line.slice(2))}</h3>`;
-          continue;
-        }
-
-        // List items
-        if (/^[-*]\s/.test(line.trimStart())) {
-          if (!inList) {
-            html += '<ul>';
-            inList = true;
-          }
-          html += `<li>${inlineFormat(line.trimStart().slice(2))}</li>`;
-          continue;
-        }
-
-        // Close list if we hit a non-list line
-        if (inList) {
-          html += '</ul>';
-          inList = false;
-        }
-
-        // Empty line
-        if (line.trim() === '') {
-          html += '<br>';
-          continue;
-        }
-
-        // Regular paragraph text
-        html += `${inlineFormat(line)}<br>`;
-      }
-
-      // Close any remaining open blocks
-      if (inCodeBlock) {
-        html += `<pre><code>${escapeHtml(codeBlockContent.trimEnd())}</code></pre>`;
-      }
-      if (inList) {
-        html += '</ul>';
-      }
-
-      return html;
-    }
-
-    function inlineFormat(text) {
-      // Escape HTML first
-      text = escapeHtml(text);
-      // Inline code: `code`
-      text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-      // Bold: **text**
-      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-      return text;
-    }
-
-    function escapeHtml(str) {
-      return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-
-    // =========================================================================
-    // Initialization
-    // =========================================================================
     async function init() {
       setStatus('Loading slide list...');
 
       try {
         const res = await fetch('/api/slides');
-        if (!res.ok) throw new Error(`Failed to fetch slide list: ${res.status}`);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch slide list: ${res.status}`);
+        }
+
         slides = await res.json();
 
         if (slides.length === 0) {
@@ -829,7 +873,10 @@
 
         goToSlide(0);
         scaleSlide();
-        setStatus('Ready.');
+        renderSelectionMeta();
+        renderTargets();
+        updateApplyState();
+        setStatus('Ready. Select a region and describe the edit.');
       } catch (err) {
         setStatus(`Error loading slides: ${err.message}`);
         console.error('Init error:', err);

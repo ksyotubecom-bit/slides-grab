@@ -75,14 +75,6 @@ program
   });
 
 program
-  .command('vlm-validate')
-  .description('Run VLM-based visual validation (requires GEMINI_API_KEY)')
-  .argument('[args...]', 'Arguments to pass through')
-  .action(async (args = []) => {
-    await runCommand('scripts/vlm-validate.js', args);
-  });
-
-program
   .command('convert')
   .description('Convert slides to PPTX')
   .argument('[args...]', 'Arguments to pass through')
@@ -99,17 +91,9 @@ program
   });
 
 program
-  .command('extract-style')
-  .description('Extract design system from a PPTX/PDF file (requires GEMINI_API_KEY)')
-  .argument('[args...]', 'Arguments to pass through')
-  .action(async (args = []) => {
-    await runCommand('scripts/extract-style.js', args);
-  });
-
-program
   .command('edit')
-  .description('Start interactive slide editor with VLM feedback + agent auto-fix')
-  .argument('[args...]', 'Arguments: --port, --provider, --model, --agent')
+  .description('Start interactive slide editor with Codex image-based edit flow')
+  .argument('[args...]', 'Arguments: --port, --codex-model')
   .action(async (args = []) => {
     await runCommand('scripts/editor-server.js', args);
   });
