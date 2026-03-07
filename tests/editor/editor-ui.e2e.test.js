@@ -59,7 +59,7 @@ async function waitForServerReady(port, child, outputRef) {
   throw new Error(`server did not become ready\n${outputRef.value}`);
 }
 
-test('supports multi-bbox selection and delete in the redesigned bbox toolbar flow', { concurrency: false }, async () => {
+test('supports multi-bbox selection and delete in the persistent inspector bbox flow', { concurrency: false }, async () => {
   const workspace = await mkdtemp(join(os.tmpdir(), 'editor-ui-e2e-'));
   await writeSlides(workspace);
 
@@ -92,9 +92,14 @@ test('supports multi-bbox selection and delete in the redesigned bbox toolbar fl
 
     await page.waitForSelector('#draw-layer');
     await page.waitForTimeout(800);
-    assert.equal(await page.locator('.sidebar').count(), 0, 'sidebar should be removed in redesigned editor');
+    assert.equal(await page.locator('#editor-sidebar').count(), 1, 'persistent editor sidebar should be present');
+    assert.equal(await page.locator('#editor-sidebar').isVisible(), true, 'persistent editor sidebar should be visible');
+    assert.equal(await page.locator('#bbox-toolbar').isVisible(), true, 'bbox toolbar should be visible in draw mode');
     const promptTag = await page.$eval('#prompt-input', (el) => el.tagName);
-    assert.equal(promptTag, 'INPUT', 'bbox prompt should be a single-line input in the top toolbar');
+    assert.equal(promptTag, 'TEXTAREA', 'bbox prompt should stay a textarea in the persistent inspector');
+    const bodyFont = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
+    assert.match(bodyFont, /Pretendard/i);
+    assert.ok(!/Geist/i.test(bodyFont), `unexpected body font stack: ${bodyFont}`);
 
     const drawLayer = await page.locator('#draw-layer').boundingBox();
     assert.ok(drawLayer, 'draw layer not found');
@@ -268,7 +273,7 @@ test('keeps bbox prompt draft and model state per slide session', { concurrency:
   }
 });
 
-test('supports direct object selection through popovers and switching back to bbox mode', { concurrency: false }, async () => {
+test('supports direct object selection through the persistent inspector and switching back to bbox mode', { concurrency: false }, async () => {
   const workspace = await mkdtemp(join(os.tmpdir(), 'editor-ui-direct-edit-e2e-'));
   await writeSlides(workspace);
 
@@ -305,11 +310,18 @@ test('supports direct object selection through popovers and switching back to bb
 
     await page.click('#tool-mode-select');
     await page.waitForFunction(() => {
-      const textBtn = document.querySelector('#select-action-text');
-      const sizeBtn = document.querySelector('#select-action-size');
-      return textBtn && sizeBtn && textBtn.hasAttribute('disabled') && sizeBtn.hasAttribute('disabled');
+      const textInput = document.querySelector('#popover-text-input');
+      const sizeInput = document.querySelector('#popover-size-input');
+      const emptyHint = document.querySelector('#select-empty-hint');
+      const selectToolbar = document.querySelector('#select-toolbar');
+      return textInput && sizeInput && emptyHint && selectToolbar
+        && !selectToolbar.hasAttribute('hidden')
+        && textInput.disabled
+        && sizeInput.disabled
+        && /click an object/i.test(emptyHint.textContent || '');
     });
-    assert.equal(await page.locator('#selected-object-chip').count(), 0, 'selected object chip should be removed');
+    const selectedMiniVisible = await page.$eval('#selected-object-mini', (el) => getComputedStyle(el).display !== 'none');
+    assert.equal(selectedMiniVisible, false, 'selected object summary should stay hidden before selection');
 
     const drawLayer = await page.locator('#draw-layer').boundingBox();
     assert.ok(drawLayer, 'draw layer not found');
@@ -320,45 +332,65 @@ test('supports direct object selection through popovers and switching back to bb
     );
 
     await page.waitForFunction(() => {
-      const textBtn = document.querySelector('#select-action-text');
-      const colorBtn = document.querySelector('#select-action-text-color');
-      const sizeBtn = document.querySelector('#select-action-size');
-      return textBtn && colorBtn && sizeBtn
-        && !textBtn.hasAttribute('disabled')
-        && !colorBtn.hasAttribute('disabled')
-        && !sizeBtn.hasAttribute('disabled');
+      const textInput = document.querySelector('#popover-text-input');
+      const colorInput = document.querySelector('#popover-text-color-input');
+      const sizeInput = document.querySelector('#popover-size-input');
+      const selectedMini = document.querySelector('#selected-object-mini');
+      return textInput && colorInput && sizeInput && selectedMini
+        && !textInput.disabled
+        && !colorInput.disabled
+        && !sizeInput.disabled
+        && getComputedStyle(selectedMini).display !== 'none';
     });
 
-    await page.click('#select-action-text');
-    await page.waitForSelector('#editor-popover-text:not([hidden])');
     await page.fill('#popover-text-input', 'Quarterly Update');
     await page.click('#popover-apply-text');
 
-    await page.click('#select-action-size');
-    await page.waitForSelector('#editor-popover-size:not([hidden])');
     await page.fill('#popover-size-input', '64');
     await page.click('#popover-apply-size');
 
-    await page.click('#select-action-text-color');
-    await page.waitForSelector('#editor-popover-text-color:not([hidden])');
     await page.$eval('#popover-text-color-input', (el) => {
       el.value = '#112233';
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    await page.click('#popover-apply-text-color');
 
-    await page.click('#select-action-bg-color');
-    await page.waitForSelector('#editor-popover-bg-color:not([hidden])');
     await page.$eval('#popover-bg-color-input', (el) => {
       el.value = '#fee2e2';
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    await page.click('#popover-apply-bg-color');
 
+    await page.waitForFunction(() => {
+      const boldBtn = document.querySelector('#toggle-bold');
+      return boldBtn
+        && boldBtn.classList.contains('active')
+        && boldBtn.getAttribute('aria-pressed') === 'true';
+    });
     await page.click('#toggle-bold');
+    await page.waitForFunction(() => {
+      const boldBtn = document.querySelector('#toggle-bold');
+      const frame = document.querySelector('#slide-iframe');
+      const heading = frame?.contentDocument?.querySelector('h1');
+      if (!boldBtn || !heading || !frame.contentWindow) return false;
+      const fontWeight = frame.contentWindow.getComputedStyle(heading).fontWeight;
+      const isBold = Number(fontWeight) >= 600 || /bold/i.test(fontWeight);
+      return !boldBtn.classList.contains('active')
+        && boldBtn.getAttribute('aria-pressed') === 'false'
+        && !isBold;
+    });
     await page.click('#toggle-bold');
+    await page.waitForFunction(() => {
+      const boldBtn = document.querySelector('#toggle-bold');
+      const frame = document.querySelector('#slide-iframe');
+      const heading = frame?.contentDocument?.querySelector('h1');
+      if (!boldBtn || !heading || !frame.contentWindow) return false;
+      const fontWeight = frame.contentWindow.getComputedStyle(heading).fontWeight;
+      const isBold = Number(fontWeight) >= 600 || /bold/i.test(fontWeight);
+      return boldBtn.classList.contains('active')
+        && boldBtn.getAttribute('aria-pressed') === 'true'
+        && isBold;
+    });
     await page.click('#toggle-strike');
     await page.click('#align-center');
 
@@ -419,7 +451,7 @@ test('supports direct object selection through popovers and switching back to bb
   }
 });
 
-test('keeps the toolbox above the slide in a 16:9 viewport', { concurrency: false }, async () => {
+test('keeps the persistent inspector beside the slide in a 16:9 viewport', { concurrency: false }, async () => {
   const workspace = await mkdtemp(join(os.tmpdir(), 'editor-ui-toolbox-layout-e2e-'));
   await writeSlides(workspace);
 
@@ -450,16 +482,16 @@ test('keeps the toolbox above the slide in a 16:9 viewport', { concurrency: fals
     const page = await browser.newPage({ viewport: { width: 1496, height: 768 } });
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'domcontentloaded' });
 
-    await page.waitForSelector('#slide-toolbox');
+    await page.waitForSelector('#editor-sidebar');
     await page.waitForSelector('#slide-wrapper');
     await page.waitForTimeout(500);
 
-    assert.equal(await page.locator('.sidebar').count(), 0, 'sidebar should be removed');
-    const toolboxBox = await page.locator('#slide-toolbox').boundingBox();
+    assert.equal(await page.locator('#editor-sidebar').count(), 1, 'persistent editor sidebar should be present');
+    const sidebarBox = await page.locator('#editor-sidebar').boundingBox();
     const wrapperBox = await page.locator('#slide-wrapper').boundingBox();
-    assert.ok(toolboxBox, 'toolbox not found');
+    assert.ok(sidebarBox, 'editor sidebar not found');
     assert.ok(wrapperBox, 'slide wrapper not found');
-    assert.ok(toolboxBox.y + toolboxBox.height <= wrapperBox.y, 'toolbox should stay above the slide frame');
+    assert.ok(sidebarBox.x >= wrapperBox.x + (wrapperBox.width * 0.9), 'sidebar should stay to the right of the slide frame');
 
     await page.click('#tool-mode-select');
     await page.waitForFunction(() => {
