@@ -17,7 +17,9 @@ The editor is pure javascript file. You can easily add up new features like addi
 </p>
 
 <p align="center">
-  <video src="https://github.com/vkehfdl1/slides-grab/raw/main/docs/assets/demo.mp4" width="720" autoplay loop muted playsinline></video>
+  <a href="https://github.com/vkehfdl1/slides-grab/releases/download/v0.0.1-demo/demo.mp4">
+    <img src="docs/assets/demo.gif" alt="slides-grab demo" width="720">
+  </a>
 </p>
 
 ---
