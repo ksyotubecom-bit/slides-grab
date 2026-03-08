@@ -47,5 +47,12 @@ ENV/
 slides/
 decks/
 *.pptx
+*.pdf
+*.dmg
 
-slides.pdf
+# Generated outlines and thumbnails
+slide-outline.md
+thumbnail-grid.png
+
+# Internal state
+.ralph/

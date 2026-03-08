@@ -83,7 +83,8 @@ export async function applyChanges() {
   ss.prompt = '';
   promptInput.value = '';
   updateSendState();
-  setStatus(`Submitting ${slide} to Codex...`);
+  const engineLabel = model.startsWith('claude-') ? 'Claude' : 'Codex';
+  setStatus(`Submitting ${slide} to ${engineLabel}...`);
 
   try {
     const res = await fetch('/api/apply', {

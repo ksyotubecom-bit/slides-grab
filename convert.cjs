@@ -9,7 +9,7 @@ const PT_PER_PX = 0.75;
 const PX_PER_IN = 96;
 const EMU_PER_IN = 914400;
 const DEFAULT_SLIDES_DIR = 'slides';
-const DEFAULT_OUTPUT = 'AI-시대의-개인도구.pptx';
+const DEFAULT_OUTPUT = 'output.pptx';
 
 function printUsage() {
   process.stdout.write(

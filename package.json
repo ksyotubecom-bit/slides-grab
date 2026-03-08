@@ -1,7 +1,31 @@
 {
   "name": "ppt-team-agent",
   "version": "1.0.0",
-  "description": "PPT Team Agent - agent-first presentation generator",
+  "description": "Agent-first presentation framework — plan, design, and visually edit HTML slides with Claude Code or Codex, then export to PPTX/PDF",
+  "license": "MIT",
+  "author": "vkehfdl1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vkehfdl1/ppt_team_agent.git"
+  },
+  "homepage": "https://github.com/vkehfdl1/ppt_team_agent#readme",
+  "bugs": {
+    "url": "https://github.com/vkehfdl1/ppt_team_agent/issues"
+  },
+  "keywords": [
+    "presentation",
+    "pptx",
+    "slides",
+    "html-slides",
+    "slide-editor",
+    "claude",
+    "codex",
+    "ai-agent",
+    "ppt"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "type": "module",
   "bin": {
     "ppt-agent": "./bin/ppt-agent.js"

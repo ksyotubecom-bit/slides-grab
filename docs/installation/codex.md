@@ -7,7 +7,7 @@ This guide is for running `ppt-team-agent` with Codex and repo-local Codex skill
 Clone:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ppt_team_agent.git && cd ppt_team_agent
+git clone https://github.com/vkehfdl1/ppt_team_agent.git && cd ppt_team_agent
 ```
 
 Install (macOS):

@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
 
-const REPO_ROOT = '/Users/jeffrey/Projects/ppt_team_agent';
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -484,22 +485,21 @@ test('keeps the persistent inspector beside the slide in a 16:9 viewport', { con
     const page = await browser.newPage({ viewport: { width: 1496, height: 768 } });
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'domcontentloaded' });
 
-    await page.waitForSelector('#stage-shell');
     await page.waitForSelector('#editor-sidebar');
     await page.waitForSelector('#slide-wrapper');
     await page.waitForTimeout(500);
 
     const navHeight = await page.$eval('.nav-bar', (el) => parseFloat(getComputedStyle(el).height));
     const statusHeight = await page.$eval('.status-bar', (el) => parseFloat(getComputedStyle(el).height));
-    const stageShellBox = await page.locator('#stage-shell').boundingBox();
+    const stageBox = await page.locator('#slide-stage').boundingBox();
     assert.equal(await page.locator('#editor-sidebar').count(), 1, 'persistent editor sidebar should be present');
     const sidebarBox = await page.locator('#editor-sidebar').boundingBox();
     const wrapperBox = await page.locator('#slide-wrapper').boundingBox();
-    assert.ok(stageShellBox, 'stage shell not found');
+    assert.ok(stageBox, 'slide stage not found');
     assert.ok(sidebarBox, 'editor sidebar not found');
     assert.ok(wrapperBox, 'slide wrapper not found');
     assert.ok(sidebarBox.width >= 300 && sidebarBox.width <= 380, `unexpected sidebar width: ${sidebarBox.width}`);
-    assert.ok(stageShellBox.width > wrapperBox.width, 'stage shell should frame the slide');
+    assert.ok(stageBox.width >= wrapperBox.width, 'slide stage should contain the slide frame');
     assert.ok(sidebarBox.x >= wrapperBox.x + (wrapperBox.width * 0.9), 'sidebar should stay to the right of the slide frame');
     assert.ok(navHeight <= 48, `nav should stay compact, got ${navHeight}`);
     assert.ok(statusHeight <= 36, `status bar should stay compact, got ${statusHeight}`);

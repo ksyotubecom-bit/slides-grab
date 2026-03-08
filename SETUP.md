@@ -5,7 +5,7 @@ Copy-paste installation guide for `ppt-team-agent`.
 ## 1) Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ppt_team_agent.git && cd ppt_team_agent
+git clone https://github.com/vkehfdl1/ppt_team_agent.git && cd ppt_team_agent
 ```
 
 ## 2) One-Liner Install by OS

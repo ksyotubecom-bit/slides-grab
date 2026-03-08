@@ -180,18 +180,7 @@
       justify-content: center;
       overflow: hidden;
       position: relative;
-      padding: 12px;
-    }
-
-    .stage-shell {
-      display: flex;
-      align-items: center;
-      justify-content: center;
       padding: 28px;
-      border: 1px solid #17191e;
-      border-radius: 20px;
-      background: #0b0d10;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.32);
       max-width: 100%;
       max-height: 100%;
     }
@@ -467,8 +456,8 @@
     .slide-wrapper iframe {
       width: 960px;
       height: 540px;
-      border: 1px solid #20252d;
-      border-radius: 10px;
+      border: none;
+      border-radius: 0;
       background: #fff;
       display: block;
       position: relative;
@@ -1601,18 +1590,16 @@
     <div class="main-content">
       <div class="slide-panel" id="slide-panel">
         <div class="slide-stage" id="slide-stage">
-          <div class="stage-shell" id="stage-shell">
-            <div class="slide-wrapper" id="slide-wrapper">
-              <button class="clear-overlay-btn" id="btn-clear-bboxes" title="Clear all boxes on current slide">Clear Boxes</button>
-              <iframe id="slide-iframe" sandbox="allow-same-origin allow-scripts" loading="eager"></iframe>
-              <div class="bbox-layer" id="bbox-layer"></div>
-              <div class="object-layer" id="object-layer">
-                <div class="object-outline hover" id="object-hover-box"></div>
-                <div class="object-outline selected" id="object-selected-box"></div>
-              </div>
-              <div class="draw-layer" id="draw-layer">
-                <div class="draw-box" id="draw-box"></div>
-              </div>
+          <div class="slide-wrapper" id="slide-wrapper">
+            <button class="clear-overlay-btn" id="btn-clear-bboxes" title="Clear all boxes on current slide">Clear Boxes</button>
+            <iframe id="slide-iframe" sandbox="allow-same-origin allow-scripts" loading="eager"></iframe>
+            <div class="bbox-layer" id="bbox-layer"></div>
+            <div class="object-layer" id="object-layer">
+              <div class="object-outline hover" id="object-hover-box"></div>
+              <div class="object-outline selected" id="object-selected-box"></div>
+            </div>
+            <div class="draw-layer" id="draw-layer">
+              <div class="draw-box" id="draw-box"></div>
             </div>
           </div>
         </div>

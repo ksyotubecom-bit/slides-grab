@@ -140,6 +140,30 @@ export function buildCodexExecArgs({ prompt, imagePath, model }) {
   return args;
 }
 
+export const CLAUDE_MODELS = ['claude-opus-4-6', 'claude-sonnet-4-6'];
+
+export function isClaudeModel(model) {
+  return typeof model === 'string' && CLAUDE_MODELS.includes(model.trim());
+}
+
+export function buildClaudeExecArgs({ prompt, imagePath, model }) {
+  const args = [
+    '-p',
+    '--dangerously-skip-permissions',
+    '--model', model.trim(),
+    '--max-turns', '30',
+    '--verbose',
+  ];
+
+  let fullPrompt = prompt;
+  if (typeof imagePath === 'string' && imagePath.trim() !== '') {
+    fullPrompt = `First, read the annotated screenshot at "${imagePath.trim()}" to see the visual context of the bbox regions highlighted on the slide.\n\n${prompt}`;
+  }
+
+  args.push(fullPrompt);
+  return args;
+}
+
 function buildAnnotationSvg(width, height, bbox) {
   const boxes = Array.isArray(bbox) ? bbox : [bbox];
 

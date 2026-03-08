@@ -11,6 +11,9 @@ import {
   SLIDE_SIZE,
   buildCodexEditPrompt,
   buildCodexExecArgs,
+  buildClaudeExecArgs,
+  CLAUDE_MODELS,
+  isClaudeModel,
   normalizeSelection,
   scaleSelectionToScreenshot,
   writeAnnotatedScreenshot,
@@ -35,6 +38,7 @@ async function loadDeps() {
 const DEFAULT_PORT = 3456;
 const DEFAULT_SLIDES_DIR = 'slides';
 const CODEX_MODELS = ['gpt-5.4', 'gpt-5.3-codex', 'gpt-5.3-codex-spark'];
+const ALL_MODELS = [...CODEX_MODELS, ...CLAUDE_MODELS];
 const DEFAULT_CODEX_MODEL = CODEX_MODELS[0];
 const SLIDE_FILE_PATTERN = /^slide-.*\.html$/i;
 
@@ -213,11 +217,11 @@ function normalizeSelections(rawSelections) {
   });
 }
 
-function normalizeCodexModel(rawModel) {
+function normalizeModel(rawModel) {
   const model = typeof rawModel === 'string' ? rawModel.trim() : '';
   if (!model) return DEFAULT_CODEX_MODEL;
-  if (!CODEX_MODELS.includes(model)) {
-    throw new Error(`Invalid \`model\`. Allowed models: ${CODEX_MODELS.join(', ')}`);
+  if (!ALL_MODELS.includes(model)) {
+    throw new Error(`Invalid \`model\`. Allowed models: ${ALL_MODELS.join(', ')}`);
   }
   return model;
 }
@@ -234,6 +238,47 @@ function spawnCodexEdit({ prompt, imagePath, model, cwd, onLog }) {
 
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(codexBin, args, { cwd, stdio: 'pipe' });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (chunk) => {
+      const text = chunk.toString();
+      stdout += text;
+      onLog('stdout', text);
+      process.stdout.write(text);
+    });
+
+    child.stderr.on('data', (chunk) => {
+      const text = chunk.toString();
+      stderr += text;
+      onLog('stderr', text);
+      process.stderr.write(text);
+    });
+
+    child.on('close', (code) => {
+      resolvePromise({ code: code ?? 1, stdout, stderr });
+    });
+
+    child.on('error', (error) => {
+      rejectPromise(error);
+    });
+  });
+}
+
+function spawnClaudeEdit({ prompt, imagePath, model, cwd, onLog }) {
+  const claudeBin = process.env.PPT_AGENT_CLAUDE_BIN || 'claude';
+  const args = buildClaudeExecArgs({ prompt, imagePath, model });
+
+  // Remove CLAUDECODE env var to avoid "nested session" detection error
+  const env = { ...process.env };
+  delete env.CLAUDECODE;
+
+  console.log(`[claude] bin=${claudeBin} args=${JSON.stringify(args.slice(0, 6))}... (prompt truncated)`);
+
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(claudeBin, args, { cwd, stdio: 'pipe', env });
+    console.log(`[claude] spawned pid=${child.pid}`);
 
     let stdout = '';
     let stderr = '';
@@ -483,7 +528,7 @@ async function startServer(opts) {
 
   app.get('/api/models', (_req, res) => {
     res.json({
-      models: CODEX_MODELS,
+      models: ALL_MODELS,
       defaultModel: DEFAULT_CODEX_MODEL,
     });
   });
@@ -535,7 +580,7 @@ async function startServer(opts) {
 
     let selectedModel;
     try {
-      selectedModel = normalizeCodexModel(model);
+      selectedModel = normalizeModel(model);
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }
@@ -605,7 +650,11 @@ async function startServer(opts) {
         selections: normalizedSelections,
       });
 
-      const result = await spawnCodexEdit({
+      const usesClaude = isClaudeModel(selectedModel);
+      const spawnEdit = usesClaude ? spawnClaudeEdit : spawnCodexEdit;
+      console.log(`[apply] engine=${usesClaude ? 'claude' : 'codex'} model=${selectedModel}`);
+      console.log(`[apply] prompt length=${codexPrompt.length}, image=${annotatedPath}`);
+      const result = await spawnEdit({
         prompt: codexPrompt,
         imagePath: annotatedPath,
         model: selectedModel,
@@ -616,10 +665,11 @@ async function startServer(opts) {
         },
       });
 
+      const engineLabel = isClaudeModel(selectedModel) ? 'Claude' : 'Codex';
       const success = result.code === 0;
       const message = success
-        ? 'Codex edit completed.'
-        : `Codex exited with code ${result.code}.`;
+        ? `${engineLabel} edit completed.`
+        : `${engineLabel} exited with code ${result.code}.`;
 
       runStore.finishRun(runId, {
         status: success ? 'success' : 'failed',
@@ -688,7 +738,7 @@ async function startServer(opts) {
     process.stdout.write('\n  ppt-agent editor\n');
     process.stdout.write('  ─────────────────────────────────────\n');
     process.stdout.write(`  Local:       http://localhost:${opts.port}\n`);
-    process.stdout.write(`  Codex models:${CODEX_MODELS.join(', ')}\n`);
+    process.stdout.write(`  Models:      ${ALL_MODELS.join(', ')}\n`);
     process.stdout.write(`  Slides:      ${slidesDirectory}\n`);
     process.stdout.write('  ─────────────────────────────────────\n\n');
   });

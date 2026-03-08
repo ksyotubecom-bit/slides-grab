@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdtemp, mkdir, writeFile, rm, chmod } from 'node:fs/promises';
 import os from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 
-const REPO_ROOT = '/Users/jeffrey/Projects/ppt_team_agent';
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
