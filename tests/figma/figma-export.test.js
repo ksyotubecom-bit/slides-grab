@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
@@ -86,15 +86,19 @@ test('configureFigmaExportPresentation applies the repo-standard slide size', ()
 
 test('figma exporter generates a pptx with the repo-standard presentation size', () => {
   const outputDir = mkdtempSync(join(tmpdir(), 'slides-grab-figma-export-'));
+  const slidesDir = join(outputDir, 'slides');
   const outputPath = join(outputDir, 'fixture-export.pptx');
 
   try {
+    mkdirSync(slidesDir, { recursive: true });
+    writeFileSync(join(outputDir, 'slides', 'slide-01.html'), createTestSlideHtml(), 'utf-8');
+
     execFileSync(
       process.execPath,
       [
         'scripts/figma-export.js',
         '--slides-dir',
-        'tests/fixtures/image-contract/positive-local-asset',
+        slidesDir,
         '--output',
         outputPath,
       ],
@@ -155,4 +159,45 @@ function extractZipEntry(zipBuffer, entryName) {
   }
 
   throw new Error(`ZIP entry not found: ${entryName}`);
+}
+
+function createTestSlideHtml() {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      width: 720pt;
+      height: 405pt;
+      margin: 0;
+      padding: 36pt;
+      font-family: Pretendard, sans-serif;
+      background: #ffffff;
+    }
+    .frame {
+      width: 100%;
+      height: 100%;
+      border: 1pt solid #222222;
+      padding: 24pt;
+    }
+    h1 {
+      margin: 0 0 12pt;
+      font-size: 24pt;
+      color: #111111;
+    }
+    p {
+      margin: 0;
+      font-size: 14pt;
+      color: #444444;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <h1>Figma Export Proof</h1>
+    <p>Repo-standard slide dimensions should be preserved.</p>
+  </div>
+</body>
+</html>`;
 }
