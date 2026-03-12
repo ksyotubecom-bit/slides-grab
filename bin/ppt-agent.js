@@ -5,10 +5,24 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
+import {
+  getFigmaImportCaveats,
+  getFigmaManualImportInstructions,
+} from '../src/figma.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(__dirname, '..');
 const packageJson = JSON.parse(readFileSync(resolve(packageRoot, 'package.json'), 'utf-8'));
+const figmaHelpText = [
+  '',
+  'Creates a PowerPoint file tuned for Figma Slides manual import.',
+  '',
+  'Manual import:',
+  `  ${getFigmaManualImportInstructions()}`,
+  '',
+  'Figma import caveats:',
+  ...getFigmaImportCaveats().map((caveat) => `  - ${caveat}`),
+].join('\n');
 
 /**
  * Run a Node.js script from the package, with CWD set to the user's directory.
@@ -100,6 +114,21 @@ program
       args.push('--output', String(options.output));
     }
     await runCommand('scripts/html2pdf.js', args);
+  });
+
+program
+  .command('figma')
+  .description('Export a Figma Slides importable PPTX')
+  .helpOption('-h, --help', 'Show this help message')
+  .option('--slides-dir <path>', 'Slide directory', 'slides')
+  .option('--output <path>', 'Output PPTX file (default: <slides-dir>-figma.pptx)')
+  .addHelpText('after', figmaHelpText)
+  .action(async (options = {}) => {
+    const args = ['--slides-dir', options.slidesDir];
+    if (options.output) {
+      args.push('--output', String(options.output));
+    }
+    await runCommand('scripts/figma-export.js', args);
   });
 
 program
