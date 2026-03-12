@@ -31,7 +31,7 @@
     "slides-grab": "./bin/ppt-agent.js"
   },
   "scripts": {
-    "html2pptx": "node .claude/skills/pptx-skill/scripts/html2pptx.js",
+    "html2pptx": "node scripts/html2pptx.js",
     "build-viewer": "node scripts/build-viewer.js",
     "validate": "node scripts/validate-slides.js",
     "convert": "node convert.cjs",

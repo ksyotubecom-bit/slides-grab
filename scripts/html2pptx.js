@@ -6,31 +6,23 @@ import { resolve } from 'node:path';
 
 import PptxGenJS from 'pptxgenjs';
 
-import {
-  configureFigmaExportPresentation,
-  ensureOutputDirectory,
-  getFigmaImportCaveats,
-  normalizeFigmaOutput,
-  SLIDE_FILE_PATTERN,
-  sortFigmaSlideFiles,
-} from '../src/figma.js';
+import { ensureOutputDirectory, SLIDE_FILE_PATTERN, sortFigmaSlideFiles } from '../src/figma.js';
 
 const require = createRequire(import.meta.url);
 const html2pptx = require('../src/html2pptx.cjs');
 
 const DEFAULT_SLIDES_DIR = 'slides';
+const DEFAULT_OUTPUT = 'output.pptx';
 
 function printUsage() {
   process.stdout.write(
     [
-      'Usage: slides-grab figma [options]',
+      'Usage: node scripts/html2pptx.js [options]',
       '',
       'Options:',
       `  --slides-dir <path>  Slide directory (default: ${DEFAULT_SLIDES_DIR})`,
-      '  --output <path>      Output PPTX file (default: <slides-dir>-figma.pptx)',
+      `  --output <path>      Output PPTX file (default: ${DEFAULT_OUTPUT})`,
       '  -h, --help           Show this help message',
-      '',
-      'Exports a Figma Slides importable PPTX using the existing html2pptx pipeline.',
     ].join('\n'),
   );
   process.stdout.write('\n');
@@ -47,7 +39,7 @@ function readOptionValue(args, index, optionName) {
 function parseArgs(args) {
   const options = {
     slidesDir: DEFAULT_SLIDES_DIR,
-    output: '',
+    output: DEFAULT_OUTPUT,
     help: false,
   };
 
@@ -87,8 +79,12 @@ function parseArgs(args) {
     throw new Error('--slides-dir must be a non-empty string.');
   }
 
+  if (typeof options.output !== 'string' || options.output.trim() === '') {
+    throw new Error('--output must be a non-empty string.');
+  }
+
   options.slidesDir = options.slidesDir.trim();
-  options.output = normalizeFigmaOutput(options.slidesDir, options.output);
+  options.output = options.output.trim();
   return options;
 }
 
@@ -120,25 +116,15 @@ async function main() {
   const files = getHtmlSlides(slidesDir);
 
   const pres = new PptxGenJS();
-  configureFigmaExportPresentation(pres);
-
-  console.log(`Exporting ${files.length} slide(s) for Figma from ${slidesDir}`);
+  pres.layout = 'LAYOUT_WIDE';
 
   for (const file of files) {
-    const filePath = resolve(slidesDir, file);
-    console.log(`  Processing: ${file}`);
-    await html2pptx(filePath, pres);
+    await html2pptx(resolve(slidesDir, file), pres);
   }
 
   await ensureOutputDirectory(outputFile);
   await pres.writeFile({ fileName: outputFile });
-
-  console.log(`\nSaved Figma-importable PPTX: ${outputFile}`);
-  console.log('\nFigma import caveats:');
-  for (const caveat of getFigmaImportCaveats()) {
-    console.log(`- ${caveat}`);
-  }
-  console.log('\nManual import: Figma Slides -> Import -> select the generated .pptx file.');
+  process.stdout.write(`Generated PPTX: ${outputFile}\n`);
 }
 
 main().catch((error) => {
