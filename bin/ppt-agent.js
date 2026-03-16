@@ -5,10 +5,25 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
+import {
+  getFigmaImportCaveats,
+  getFigmaManualImportInstructions,
+} from '../src/figma.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(__dirname, '..');
 const packageJson = JSON.parse(readFileSync(resolve(packageRoot, 'package.json'), 'utf-8'));
+const figmaHelpText = [
+  '',
+  'Creates an experimental / unstable PowerPoint file tuned for Figma Slides manual import.',
+  'Treat both PPTX and Figma export as best-effort only.',
+  '',
+  'Manual import:',
+  `  ${getFigmaManualImportInstructions()}`,
+  '',
+  'Figma import caveats:',
+  ...getFigmaImportCaveats().map((caveat) => `  - ${caveat}`),
+].join('\n');
 
 /**
  * Run a Node.js script from the package, with CWD set to the user's directory.
@@ -49,6 +64,10 @@ async function runCommand(relativePath, args = []) {
   }
 }
 
+function collectRepeatedOption(value, previous = []) {
+  return [...previous, value];
+}
+
 const program = new Command();
 
 program
@@ -69,16 +88,22 @@ program
 
 program
   .command('validate')
+  .alias('lint')
   .description('Run structured validation on slide HTML files (Playwright-based)')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
+  .option('--format <format>', 'Output format: concise, json, json-full', 'concise')
+  .option('--slide <file>', 'Validate only the named slide file (repeatable)', collectRepeatedOption, [])
   .action(async (options = {}) => {
-    const args = ['--slides-dir', options.slidesDir];
+    const args = ['--slides-dir', options.slidesDir, '--format', options.format];
+    for (const slide of options.slide || []) {
+      args.push('--slide', String(slide));
+    }
     await runCommand('scripts/validate-slides.js', args);
   });
 
 program
   .command('convert')
-  .description('Convert slide HTML files to PPTX')
+  .description('Convert slide HTML files to experimental / unstable PPTX')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--output <path>', 'Output PPTX file')
   .action(async (options = {}) => {
@@ -94,12 +119,31 @@ program
   .description('Convert slide HTML files to PDF')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--output <path>', 'Output PDF file')
+  .option('--mode <mode>', 'PDF export mode: capture for visual fidelity, print for searchable text', 'capture')
   .action(async (options = {}) => {
     const args = ['--slides-dir', options.slidesDir];
     if (options.output) {
       args.push('--output', String(options.output));
     }
+    if (options.mode) {
+      args.push('--mode', String(options.mode));
+    }
     await runCommand('scripts/html2pdf.js', args);
+  });
+
+program
+  .command('figma')
+  .description('Export an experimental / unstable Figma Slides importable PPTX')
+  .helpOption('-h, --help', 'Show this help message')
+  .option('--slides-dir <path>', 'Slide directory', 'slides')
+  .option('--output <path>', 'Output PPTX file (default: <slides-dir>-figma.pptx)')
+  .addHelpText('after', figmaHelpText)
+  .action(async (options = {}) => {
+    const args = ['--slides-dir', options.slidesDir];
+    if (options.output) {
+      args.push('--output', String(options.output));
+    }
+    await runCommand('scripts/figma-export.js', args);
   });
 
 program

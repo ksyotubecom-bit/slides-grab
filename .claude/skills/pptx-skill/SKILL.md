@@ -1,16 +1,16 @@
 ---
 name: pptx-skill
-description: Convert HTML slides to PowerPoint (PPTX) files. Use when PPTX generation, editing, or thumbnail creation is needed.
+description: Convert HTML slides to experimental / unstable PowerPoint (PPTX) files. Use when best-effort PPTX generation, editing, or thumbnail creation is needed.
 ---
 
-# PPTX Skill - PowerPoint Conversion
+# PPTX Skill - Experimental / Unstable PowerPoint Conversion
 
-Converts HTML slides into PowerPoint presentation files.
+Converts HTML slides into experimental / unstable PowerPoint presentation files on a best-effort basis.
 
 ## Feature Overview
 
 ### 1. New Presentation (HTML -> PPTX)
-Convert HTML slide files to PowerPoint
+Convert HTML slide files to experimental / unstable PowerPoint output
 
 ### 2. Edit Existing Presentation
 Modify contents of a PPTX file
@@ -38,7 +38,7 @@ If prerequisites are not met, guide the user to review slides in `<slides-dir>/v
    - Verify HTML files exist in selected `--slides-dir` (default: `slides/`)
    - Validate each file is 720pt x 405pt (16:9) specification
 
-2. **Run html2pptx.js**
+2. **Run html2pptx.js** (experimental / unstable)
    ```bash
    slides-grab convert --slides-dir <path> --output presentation.pptx
    ```
@@ -48,7 +48,7 @@ If prerequisites are not met, guide the user to review slides in `<slides-dir>/v
    ```
 
 3. **Verify results**
-   - Check generated PPTX file
+   - Check generated PPTX file carefully; expect best-effort fidelity only
    - Visual verification via thumbnail
 
 ## Script Usage
@@ -218,6 +218,8 @@ slide.addChart(pres.ChartType.line, [...], {...});
 - Poppler: PDF to image (pdftoppm)
 
 ## Important Notes
+
+- PPTX export is **experimental / unstable** and may require manual cleanup after generation.
 
 1. **Color codes**: No `#` prefix in PptxGenJS
 2. **Fonts**: Web-safe fonts only

@@ -448,26 +448,40 @@ Rules:
 - Use HEX values with `#` prefix for `stroke`/`fill` colors.
 - Place text outside SVG using `<p>`, `<h1>`-`<h6>` tags.
 
-### 4. Image Usage Rules (Local Path / URL / Placeholder)
+### 4. Image Usage Rules (Local Asset / Data URL / Remote URL / Placeholder)
 
-#### Local Path Image
+#### Canonical Local Asset Image
 ```html
-<img src="/Users/yourname/projects/assets/team-photo.png" alt="Team photo" style="width: 220pt; height: 140pt; object-fit: cover;">
+<img src="./assets/team-photo.png" alt="Team photo" style="width: 220pt; height: 140pt; object-fit: cover;">
 ```
 
-#### URL Image
+Store the image at `<slides-dir>/assets/team-photo.png`.
+
+#### Self-Contained Fallback (`data:` URL)
+```html
+<img src="data:image/svg+xml;base64,..." alt="Illustration" style="width: 220pt; height: 140pt; object-fit: cover;">
+```
+
+#### Remote URL (Best-Effort Only)
 ```html
 <img src="https://images.example.com/hero.png" alt="Hero image" style="width: 220pt; height: 140pt; object-fit: cover;">
 ```
 
 #### Placeholder (Image Stand-In)
 ```html
-<div data-image-placeholder style="width: 220pt; height: 140pt; border: 1px dashed #c7c7c7; background: #f3f4f6;"></div>
+<div data-image-placeholder style="width: 220pt; height: 140pt; border: 1px dashed #c7c7c7; background: #f3f4f6; display: flex; align-items: center; justify-content: center;">
+  <p style="font-size: 10pt; color: #6b7280; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;">Image Placeholder</p>
+</div>
 ```
 
 Rules:
 - Always include `alt` on `img` tags.
-- Prefer local paths; URL images risk network failures.
+- Use `./assets/<file>` as the default image contract for slide HTML.
+- Keep slide assets in `<slides-dir>/assets/`.
+- `data:` URLs are allowed for fully self-contained slides.
+- Remote `https://` URLs are allowed but non-deterministic and should be treated as fallback only.
+- Do not use absolute filesystem paths in slide HTML.
+- Do not use non-body `background-image` for content imagery; use `<img>` instead.
 - Use `data-image-placeholder` to reserve space when no image is available yet.
 - Use high-resolution originals and fit with `object-fit`.
 
@@ -527,22 +541,29 @@ This skill is **Stage 2**. It works from the `slide-outline.md` approved by the 
 ### Steps
 
 1. **Analyze + Design**: Read `slide-outline.md`, decide theme/layout, generate HTML slides
-2. **Auto-build viewer**: After slide generation, automatically run:
+2. **Validate slides**: After slide generation or edits, automatically run:
+   ```bash
+   slides-grab validate --slides-dir <path>
+   ```
+3. **Auto-fix validation issues**: If validation fails, fix the source HTML/CSS and re-run validation until it passes
+4. **Auto-build viewer**: After validation passes, automatically run:
    ```bash
    node scripts/build-viewer.js --slides-dir <path>
    ```
-3. **Guide user to review**: Tell the user to check slides in the browser:
+5. **Guide user to review**: Tell the user to check slides in the browser:
    ```
    open <slides-dir>/viewer.html
    ```
-4. **Revision loop**: When the user requests changes to specific slides:
+6. **Revision loop**: When the user requests changes to specific slides:
    - Edit only the relevant HTML file
+   - Re-run `slides-grab validate --slides-dir <path>` and fix any failures
    - Re-run `node scripts/build-viewer.js --slides-dir <path>` to rebuild the viewer
    - Guide user to review again
-5. **Completion**: Repeat the revision loop until the user signals approval for PPTX conversion
+7. **Completion**: Repeat the revision loop until the user signals approval for PPTX conversion
 
 ### Absolute Rules
 - **Never start PPTX conversion without approval** — PPTX conversion is the responsibility of `pptx-skill` and requires explicit user approval.
+- **Never skip validation** — Run `slides-grab validate --slides-dir <path>` after generation or edits and fix failures before review.
 - **Never forget to build the viewer** — Run `node scripts/build-viewer.js --slides-dir <path>` every time slides are generated or modified.
 
 ---
@@ -551,6 +572,6 @@ This skill is **Stage 2**. It works from the `slide-outline.md` approved by the 
 
 1. **CSS gradients**: Not supported in PowerPoint conversion — replace with background images
 2. **Webfonts**: Always include the Pretendard CDN link
-3. **Image paths**: Use absolute paths or URLs
+3. **Image paths**: Use `./assets/<file>` from each `slide-XX.html`; avoid absolute filesystem paths
 4. **Colors**: Always include `#` prefix in CSS
 5. **Text rules**: Never place text directly in div/span

@@ -1,8 +1,59 @@
+import { readFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import sharp from 'sharp';
 
+import { getPackageRoot } from '../resolve.js';
+
 export const SLIDE_SIZE = { width: 960, height: 540 };
+
+const PPT_DESIGN_SKILL_PATH = join(getPackageRoot(), 'skills', 'slides-grab-design', 'SKILL.md');
+const DETAILED_DESIGN_SKILL_PATH = join(getPackageRoot(), '.claude', 'skills', 'design-skill', 'SKILL.md');
+const DETAILED_DESIGN_SECTION_HEADINGS = [
+  '## Base Settings',
+  '### 4. Image Usage Rules (Local Asset / Data URL / Remote URL / Placeholder)',
+  '## Text Usage Rules',
+  '## Workflow (Stage 2: Design + Human Review)',
+  '## Important Notes',
+];
+const DETAILED_DESIGN_SKILL_FALLBACK = [
+  '## Base Settings',
+  '',
+  '### Slide Size (16:9 default)',
+  '- Keep slide body at 720pt x 405pt.',
+  '- Use Pretendard as the default font stack.',
+  '- Include the Pretendard webfont CDN link when needed.',
+  '',
+  '### 4. Image Usage Rules (Local Asset / Data URL / Remote URL / Placeholder)',
+  '- Always include alt on img tags.',
+  '- Use ./assets/<file> as the default image contract for slide HTML.',
+  '- Keep slide assets in <slides-dir>/assets/.',
+  '- data: URLs are allowed for fully self-contained slides.',
+  '- Remote https:// URLs are allowed but non-deterministic and fallback only.',
+  '- Do not use absolute filesystem paths in slide HTML.',
+  '- Do not use non-body background-image for content imagery; use <img> instead.',
+  '- Use data-image-placeholder to reserve space when no image is available yet.',
+  '',
+  '## Text Usage Rules',
+  '- All text must be inside <p>, <h1>-<h6>, <ul>, <ol>, or <li>.',
+  '- Never place text directly in <div> or <span>.',
+  '',
+  '## Workflow (Stage 2: Design + Human Review)',
+  '- After slide generation or edits, run node scripts/build-viewer.js --slides-dir <path>.',
+  '- Edit only the relevant HTML file during revision loops.',
+  '- Never start PPTX conversion without explicit approval.',
+  '- Never forget to rebuild the viewer after slide changes.',
+  '',
+  '## Important Notes',
+  '- CSS gradients are not supported in PowerPoint conversion; replace them with background images.',
+  '- Always include the Pretendard CDN link.',
+  '- Use ./assets/<file> from each slide-XX.html and avoid absolute filesystem paths.',
+  '- Always include # prefix in CSS colors.',
+  '- Never place text directly in div/span.',
+].join('\n');
+
+let cachedPptDesignSkillPrompt = null;
+let cachedDetailedDesignSkillPrompt = null;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -77,6 +128,67 @@ function formatTargets(targets) {
   });
 }
 
+export function getPptDesignSkillPrompt() {
+  if (cachedPptDesignSkillPrompt !== null) {
+    return cachedPptDesignSkillPrompt;
+  }
+
+  try {
+    cachedPptDesignSkillPrompt = readFileSync(PPT_DESIGN_SKILL_PATH, 'utf8').trim();
+  } catch {
+    cachedPptDesignSkillPrompt = '';
+  }
+
+  return cachedPptDesignSkillPrompt;
+}
+
+function extractMarkdownSection(markdown, heading) {
+  const lines = markdown.split('\n');
+  const startIndex = lines.findIndex((line) => line.trim() === heading.trim());
+  if (startIndex === -1) {
+    return '';
+  }
+
+  const levelMatch = heading.match(/^(#+)\s/);
+  const headingLevel = levelMatch ? levelMatch[1].length : null;
+  if (!headingLevel) {
+    return '';
+  }
+
+  const extracted = [lines[startIndex]];
+  for (let i = startIndex + 1; i < lines.length; i += 1) {
+    const line = lines[i];
+    const nextHeadingMatch = line.match(/^(#+)\s/);
+    if (nextHeadingMatch && nextHeadingMatch[1].length <= headingLevel) {
+      break;
+    }
+    extracted.push(line);
+  }
+
+  return extracted.join('\n').trim();
+}
+
+export function getDetailedDesignSkillPrompt() {
+  if (cachedDetailedDesignSkillPrompt !== null) {
+    return cachedDetailedDesignSkillPrompt;
+  }
+
+  try {
+    const markdown = readFileSync(DETAILED_DESIGN_SKILL_PATH, 'utf8');
+    const sections = DETAILED_DESIGN_SECTION_HEADINGS
+      .map((heading) => extractMarkdownSection(markdown, heading))
+      .filter(Boolean);
+
+    cachedDetailedDesignSkillPrompt = sections.length > 0
+      ? sections.join('\n\n')
+      : DETAILED_DESIGN_SKILL_FALLBACK;
+  } catch {
+    cachedDetailedDesignSkillPrompt = DETAILED_DESIGN_SKILL_FALLBACK;
+  }
+
+  return cachedDetailedDesignSkillPrompt;
+}
+
 export function buildCodexEditPrompt({ slideFile, slidePath, userPrompt, selections = [] }) {
   const sanitizedPrompt = typeof userPrompt === 'string' ? userPrompt.trim() : '';
   if (!sanitizedPrompt) {
@@ -103,9 +215,30 @@ export function buildCodexEditPrompt({ slideFile, slidePath, userPrompt, selecti
     ];
   });
 
+  const pptDesignSkillPrompt = getPptDesignSkillPrompt();
+  const skillLines = pptDesignSkillPrompt
+    ? [
+        'Project skill guidance (follow strictly):',
+        `Source: ${PPT_DESIGN_SKILL_PATH}`,
+        pptDesignSkillPrompt,
+        '',
+      ]
+    : [];
+  const detailedDesignSkillPrompt = getDetailedDesignSkillPrompt();
+  const detailedSkillLines = detailedDesignSkillPrompt
+    ? [
+        'Detailed design/export guardrails (selected from the full design system):',
+        `Primary source: ${DETAILED_DESIGN_SKILL_PATH}`,
+        detailedDesignSkillPrompt,
+        '',
+      ]
+    : [];
+
   return [
     `Edit ${normalizedSlidePath} only.`,
     '',
+    ...skillLines,
+    ...detailedSkillLines,
     'User edit request:',
     sanitizedPrompt,
     '',
@@ -116,6 +249,8 @@ export function buildCodexEditPrompt({ slideFile, slidePath, userPrompt, selecti
     '- Keep existing structure/content unless the request requires a change.',
     '- Keep slide dimensions at 720pt x 405pt.',
     '- Keep text in semantic tags (<p>, <h1>-<h6>, <ul>, <ol>, <li>).',
+    '- Keep local assets under ./assets/ and preserve portable relative paths.',
+    '- Do not persist runtime-only editor/viewer injections such as <base>, debug scripts, or viewer wrapper markup into the slide file.',
     '- Return after applying the change.',
   ].join('\n');
 }

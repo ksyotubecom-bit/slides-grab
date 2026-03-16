@@ -5,11 +5,36 @@ const fs = require('fs');
 const sharp = require('sharp');
 
 // Inline a simplified version that uses Playwright Chromium (not Chrome)
-const PT_PER_PX = 0.75;
-const PX_PER_IN = 96;
-const EMU_PER_IN = 914400;
 const DEFAULT_SLIDES_DIR = 'slides';
 const DEFAULT_OUTPUT = 'output.pptx';
+const DEFAULT_CAPTURE_VIEWPORT = { width: 960, height: 540 };
+const DEFAULT_CAPTURE_DEVICE_SCALE_FACTOR = 2;
+const TARGET_RASTER_DPI = 150;
+const TARGET_SLIDE_SIZE_IN = { width: 13.33, height: 7.5 };
+
+function normalizeDimension(value, fallback) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+  return Math.max(1, Math.round(value));
+}
+
+function buildPageOptions() {
+  return {
+    viewport: {
+      width: DEFAULT_CAPTURE_VIEWPORT.width,
+      height: DEFAULT_CAPTURE_VIEWPORT.height,
+    },
+    deviceScaleFactor: DEFAULT_CAPTURE_DEVICE_SCALE_FACTOR,
+  };
+}
+
+function getTargetRasterSize() {
+  return {
+    width: Math.round(TARGET_SLIDE_SIZE_IN.width * TARGET_RASTER_DPI),
+    height: Math.round(TARGET_SLIDE_SIZE_IN.height * TARGET_RASTER_DPI),
+  };
+}
 
 function printUsage() {
   process.stdout.write(
@@ -88,7 +113,7 @@ function parseArgs(args) {
 async function convertSlide(htmlFile, pres, browser) {
   const filePath = path.isAbsolute(htmlFile) ? htmlFile : path.join(process.cwd(), htmlFile);
 
-  const page = await browser.newPage();
+  const page = await browser.newPage(buildPageOptions());
   await page.goto(`file://${filePath}`);
 
   const bodyDimensions = await page.evaluate(() => {
@@ -101,8 +126,8 @@ async function convertSlide(htmlFile, pres, browser) {
   });
 
   await page.setViewportSize({
-    width: Math.round(bodyDimensions.width),
-    height: Math.round(bodyDimensions.height)
+    width: normalizeDimension(bodyDimensions.width, DEFAULT_CAPTURE_VIEWPORT.width),
+    height: normalizeDimension(bodyDimensions.height, DEFAULT_CAPTURE_VIEWPORT.height)
   });
 
   // Take screenshot and add as full-slide image
@@ -110,11 +135,10 @@ async function convertSlide(htmlFile, pres, browser) {
   await page.close();
 
   // Resize to exact slide dimensions (13.33" x 7.5" at 150 DPI)
-  const targetWidth = Math.round(13.33 * 150);
-  const targetHeight = Math.round(7.5 * 150);
+  const targetSize = getTargetRasterSize();
 
   const resized = await sharp(screenshot)
-    .resize(targetWidth, targetHeight, { fit: 'fill' })
+    .resize(targetSize.width, targetSize.height, { fit: 'fill' })
     .png()
     .toBuffer();
 
@@ -144,6 +168,8 @@ async function main() {
   pres.layout = 'LAYOUT_WIDE'; // 16:9
 
   const slidesDir = path.resolve(process.cwd(), options.slidesDir);
+  const { ensureSlidesPassValidation } = await import('./scripts/validate-slides.js');
+  await ensureSlidesPassValidation(slidesDir, { exportLabel: 'PPTX export' });
   const files = fs.readdirSync(slidesDir)
     .filter(f => f.endsWith('.html'))
     .sort();
@@ -178,7 +204,15 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error('Fatal error:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(err => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  buildPageOptions,
+  getTargetRasterSize,
+  parseArgs,
+};

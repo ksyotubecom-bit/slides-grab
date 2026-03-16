@@ -1,6 +1,6 @@
-# HTML to PowerPoint Guide
+# HTML to PowerPoint Guide (Experimental / Unstable)
 
-Convert HTML slides to PowerPoint presentations with accurate positioning using the `html2pptx.js` library.
+Convert HTML slides to best-effort, experimental / unstable PowerPoint presentations using the `html2pptx.js` library.
 
 ## Table of Contents
 
