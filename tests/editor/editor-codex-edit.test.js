@@ -4,6 +4,8 @@ import test from 'node:test';
 import {
   buildCodexEditPrompt,
   buildCodexExecArgs,
+  getDetailedDesignSkillPrompt,
+  getPptDesignSkillPrompt,
   normalizeSelection,
   scaleSelectionToScreenshot,
 } from '../../src/editor/codex-edit.js';
@@ -71,6 +73,14 @@ test('buildCodexEditPrompt includes user prompt, bbox, and XPath targets', () =>
   assert.match(prompt, /\/html\/body\/div\[1\]\/h1\[1\]/);
   assert.match(prompt, /Q1 Revenue/);
   assert.match(prompt, /Region 1/);
+  assert.match(prompt, /Project skill guidance \(follow strictly\):/);
+  assert.match(prompt, /skills\/ppt-design-skill\/SKILL\.md/);
+  assert.match(prompt, /Keep slide size 720pt x 405pt\./);
+  assert.match(prompt, /Detailed design\/export guardrails \(selected from the full design system\):/);
+  assert.match(prompt, /Do not use non-body `background-image` for content imagery; use `<img>` instead\./);
+  assert.match(prompt, /CSS gradients.*not supported in PowerPoint conversion/i);
+  assert.match(prompt, /Never forget to build the viewer/i);
+  assert.match(prompt, /Do not persist runtime-only editor\/viewer injections/);
 });
 
 test('buildCodexEditPrompt uses explicit slide path when provided', () => {
@@ -103,4 +113,24 @@ test('buildCodexExecArgs attaches image and prompt to codex exec', () => {
     '--',
     'Edit slide',
   ]);
+});
+
+test('getPptDesignSkillPrompt loads bundled ppt design skill guidance', () => {
+  const skillPrompt = getPptDesignSkillPrompt();
+
+  assert.match(skillPrompt, /# PPT Design Skill \(Codex\)/);
+  assert.match(skillPrompt, /Keep slide size 720pt x 405pt\./);
+  assert.match(skillPrompt, /reference them as `\.\/assets\/<file>`\./);
+});
+
+test('getDetailedDesignSkillPrompt loads only relevant detailed design sections', () => {
+  const detailedPrompt = getDetailedDesignSkillPrompt();
+
+  assert.match(detailedPrompt, /## Base Settings/);
+  assert.match(detailedPrompt, /### 4\. Image Usage Rules/);
+  assert.match(detailedPrompt, /## Text Usage Rules/);
+  assert.match(detailedPrompt, /## Workflow \(Stage 2: Design \+ Human Review\)/);
+  assert.match(detailedPrompt, /## Important Notes/);
+  assert.doesNotMatch(detailedPrompt, /## Core Design Philosophy/);
+  assert.doesNotMatch(detailedPrompt, /### 1\. Chart\.js/);
 });
